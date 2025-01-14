@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    codegen:
+      run: cd ./graph && bun codegen
+    build:
+      run: cd ./graph && bun run build:silent
