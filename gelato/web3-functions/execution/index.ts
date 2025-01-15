@@ -12,7 +12,7 @@ import {
 import { polygon, polygonAmoy } from "viem/chains";
 
 const abi = parseAbi([
-  "function interval() external view returns(uint256)",
+  "function getCurrentRound() external view returns(uint256)",
   "function getRoundBank(uint256 round) external view returns(uint256)",
   "function spin(address _table, uint256 _round) external",
 ]);
@@ -35,13 +35,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   const tableAddress = userArgs.table as Address;
 
   // get previous round
-  const interval = await client.readContract({
-    address: tableAddress,
-    abi: abi,
-    functionName: "interval",
-    args: [],
-  });
-  const round = BigInt(Math.floor(Date.now() / 1000 / Number(interval)) - 1);
+  const round =
+    (await client.readContract({
+      address: tableAddress,
+      abi: abi,
+      functionName: "getCurrentRound",
+      args: [],
+    })) - BigInt(1);
   // get players count
   const roundBank = await client.readContract({
     address: tableAddress,
