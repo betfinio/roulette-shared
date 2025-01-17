@@ -1,0 +1,57 @@
+specVersion: 1.2.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: LiveRoulette
+    network: matic
+    source:
+      abi: LiveRouletteABI
+      address: "0xbf18ab92fbc577C1CDf627896edd61901e888001"
+      startBlock: 65353372
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - TableCreated
+      abis:
+        - name: LiveRouletteABI
+          file: ./abis/LiveRouletteABI.json
+        - name: LiroBetABI
+          file: ./abis/LiroBetABI.json
+        - name: TableABI
+          file: ./abis/MultiPlayerTableABI.json
+      eventHandlers:
+        - event: TableCreated(indexed address,indexed uint256)
+          handler: handleMultiplePlayersTableCreated
+      blockHandlers:
+        - handler: handleSinglePlayerTableCreated
+          filter:
+            kind: once
+      file: ./src/liro.ts
+templates:
+  - kind: ethereum/contract
+    name: TableTemplate
+    network: matic
+    source:
+      abi: TableABI
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/liro-table.ts
+      entities:
+        - BetPlaced
+      abis:
+        - name: TableABI
+          file: ./abis/MultiPlayerTableABI.json
+        - name: LiroBetABI
+          file: ./abis/LiroBetABI.json
+      eventHandlers:
+        - event: BetPlaced(indexed address,uint256)
+          handler: handleBetPlaced
+        - event: BetEnded(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBetEnded

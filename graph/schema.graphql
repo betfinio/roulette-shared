@@ -1,0 +1,110 @@
+type Table @entity(immutable: true) {
+    id: Bytes!
+    interval: BigInt! # uint256
+    address: Bytes! # address
+    blockNumber: BigInt!
+    blockTimestamp: BigInt!
+    transactionHash: Bytes!
+}
+
+type PlayerRoundBetPlaceds @entity {
+    id: Bytes!
+    player: Bytes! # address
+    round: BigInt! # uint256
+    amount: BigInt! # uint256
+    winAmount: BigInt! # uint256
+    winNumber: BigInt # uint256
+    # We need bet for single mode only
+    bet: Bytes! # address
+    betsCount: BigInt! # uint256
+    table: Bytes! # address
+    blockNumber: BigInt!
+    blockTimestamp: BigInt!
+    status: BigInt
+}
+type PlayerRoundSingleBetPlaceds @entity {
+    id: Bytes!
+    player: Bytes! # address
+    round: BigInt! # uint256
+    amount: BigInt! # uint256
+    winAmount: BigInt! # uint256
+    bet: Bytes! # address
+    table: Bytes! # address
+    blockNumber: BigInt!
+    blockTimestamp: BigInt!
+    status: BigInt
+    chips: [Chip!]!
+}
+type RoundBetPlaceds @entity {
+    id: Bytes!
+    # We need player  for single mode only
+    player: Bytes! # address
+    round: BigInt! # uint256
+    amount: BigInt! # uint256
+    winAmount: BigInt! # uint256
+    winNumber: BigInt # uint256
+    # We need bet for single mode only
+    bet: Bytes! # address
+    betsCount: BigInt! # uint256
+    table: Bytes! # address
+    blockNumber: BigInt!
+    blockTimestamp: BigInt!
+    status: BigInt
+    chips: [Chip!]!
+}
+
+type BetEnded @entity(immutable: true) {
+    id: Bytes!
+    transactionHash: Bytes!
+    bet: Bytes! # address
+}
+
+# type PlayerRoundBitMap @entity {
+#   id: Bytes!
+#   player: Bytes! # address
+#   round: BigInt! # uint256
+#   amount: BigInt! # uint256
+#   bet: Bytes! # address
+#   betsCount: BigInt! # uint256
+#   table: Bytes! # address
+#   blockNumber: BigInt!
+#   blockTimestamp: BigInt!
+#   transactionHash: Bytes!
+# }
+
+type Chip @entity {
+    id: Bytes!
+    amount: BigInt!
+    bitMap: BigInt!
+}
+
+type RouletteNumber @entity {
+    id: Bytes!
+    number: Int! # The roulette number (0-36)
+    lastUpdated: BigInt! # Last block timestamp when the number was rolled
+    count: BigInt! # Total times the number has been rolled
+    score: BigDecimal! # Calculated score based on count and recency
+    table: Bytes! # address
+    player: Bytes! # address
+
+}
+
+type RouletteStats @entity {
+    id: Bytes!
+    totalRolls: BigInt! # Total number of rolls
+    oddCount: BigInt! # Total odd numbers rolled
+    evenCount: BigInt! # Total even numbers rolled
+    redCount: BigInt! # Total red numbers rolled
+    blackCount: BigInt! # Total black numbers rolled
+    zeroCount: BigInt! # Total zeroes rolled
+    table: Bytes! # address
+    player: Bytes! # address
+}
+
+
+type UniqueTableRounds @entity {
+    id: Bytes!
+    table: Bytes! # address
+    round: BigInt! # uint256
+}
+

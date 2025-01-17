@@ -1,0 +1,19 @@
+{
+	"name": "roulette-shared",
+	"license": "UNLICENSED",
+	"scripts": {
+		"codegen": "graph codegen",
+		"build:dev": "graph build --network polygon-amoy",
+		"build:prod": "graph build --network matic",
+		"deploy:dev": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-shared --network polygon-amoy",
+		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-shared --network matic",
+		"test": "graph test"
+	},
+	"dependencies": {
+		"@graphprotocol/graph-cli": "0.81.0",
+		"@graphprotocol/graph-ts": "0.32.0"
+	},
+	"devDependencies": {
+		"matchstick-as": "0.5.0"
+	}
+}
