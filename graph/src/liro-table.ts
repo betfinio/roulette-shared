@@ -70,7 +70,8 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   
   let playerRoundSingleBetPlacedsId = event.address.concatI32(round).concat(bet.getPlayer()).concat(event.params.bet);
   const playerRoundSingleBetPlaced = new PlayerRoundSingleBetPlaceds(playerRoundSingleBetPlacedsId);
-  playerRoundSingleBetPlaced.player = bet.getPlayer();
+  const player = bet.getPlayer();
+  playerRoundSingleBetPlaced.player = player;
   playerRoundSingleBetPlaced.bet = event.params.bet;
   playerRoundSingleBetPlaced.blockTimestamp = event.block.timestamp;
   playerRoundSingleBetPlaced.blockNumber = event.block.number;
@@ -79,7 +80,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
   playerRoundSingleBetPlaced.winAmount = BigInt.fromI32(-1);
   playerRoundSingleBetPlaced.table = bet.getTable();
   playerRoundSingleBetPlaced.status = bet.getStatus();
-  playerRoundSingleBetPlaced.chips = createChips(bet.getBets(), event.params.bet);
+  playerRoundSingleBetPlaced.chips = createChips(bet.getBets(), event.params.bet, player);
   
   playerRoundSingleBetPlaced.save();
   
@@ -118,7 +119,7 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
     roundPlaced = new RoundBetPlaceds(roundPlacedsId);
     roundPlaced.bet = event.params.bet;
     roundPlaced.betsCount = BigInt.fromI32(1);
-    roundPlaced.player = bet.getPlayer();
+    roundPlaced.player = player;
     roundPlaced.round = event.params.round;
     roundPlaced.amount = bet.getAmount();
     roundPlaced.winAmount = BigInt.fromI32(-1);
@@ -126,12 +127,12 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
     roundPlaced.blockNumber = event.block.number;
     roundPlaced.blockTimestamp = event.block.timestamp;
     roundPlaced.status = bet.getStatus();
-    roundPlaced.chips = createChips(bet.getBets(), event.params.bet);
+    roundPlaced.chips = createChips(bet.getBets(), event.params.bet, player);
     roundPlaced.save();
   } else {
     roundPlaced.amount = roundPlaced.amount.plus(bet.getAmount());
     roundPlaced.betsCount = roundPlaced.betsCount.plus(BigInt.fromI32(1));
-    roundPlaced.chips = roundPlaced.chips.concat(createChips(bet.getBets(), event.params.bet));
+    roundPlaced.chips = roundPlaced.chips.concat(createChips(bet.getBets(), event.params.bet, player));
     
     roundPlaced.save();
   }
@@ -139,14 +140,14 @@ export function handleBetPlaced(event: BetPlacedEvent): void {
 }
 
 
-function createChips(bets: LiroBetABI__getBetsResult, betAddress: Address): Array<Bytes> {
-  
+function createChips(bets: LiroBetABI__getBetsResult, betAddress: Address, player: Address): Array<Bytes> {
   const chipIds = new Array<Bytes>();
   for (let i = 0; i < bets.getAmounts().length; i++) {
     const chipId = betAddress.concatI32(i);
     const chip = new Chip(chipId);
     chip.amount = bets.getAmounts()[i];
     chip.bitMap = bets.getBitmaps()[i];
+    chip.player = player;
     chip.save();
     chipIds.push(chipId);
   }

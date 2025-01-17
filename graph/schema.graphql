@@ -59,23 +59,12 @@ type BetEnded @entity(immutable: true) {
     bet: Bytes! # address
 }
 
-# type PlayerRoundBitMap @entity {
-#   id: Bytes!
-#   player: Bytes! # address
-#   round: BigInt! # uint256
-#   amount: BigInt! # uint256
-#   bet: Bytes! # address
-#   betsCount: BigInt! # uint256
-#   table: Bytes! # address
-#   blockNumber: BigInt!
-#   blockTimestamp: BigInt!
-#   transactionHash: Bytes!
-# }
 
 type Chip @entity {
     id: Bytes!
     amount: BigInt!
     bitMap: BigInt!
+    player: Bytes! # address
 }
 
 type RouletteNumber @entity {
