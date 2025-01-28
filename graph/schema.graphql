@@ -97,3 +97,28 @@ type UniqueTableRounds @entity {
     round: BigInt! # uint256
 }
 
+type Bet @entity {
+    id: Bytes!
+    amount: BigInt! # uint256
+    winAmount: BigInt! # uint256
+    winNumber: BigInt! # The roulette number (0-36), 42 - no known yet
+    status: BigInt! # 1 - created, 2 - finished, 3 - refunded
+    player: Bytes! # address
+    chips: [Chip!]!
+    table: Table! # address
+    round: BigInt! # uint256
+}
+
+# for live roulette only
+type Round @entity {
+    id: Bytes!
+    table: Bytes! # address
+    round: BigInt! # uint256
+    winNumber: BigInt! # The roulette number (0-36), 42 - no known yet
+    status: BigInt! # 0 - not exists, 1 - created, 2 - requested, 3 - finished, 4 - refunded
+    started: BigInt! # block timestamp
+    totalBetAmount: BigInt! # uint256
+    totalWinAmount: BigInt! # uint256
+    bets: [Bet!]!
+}
+

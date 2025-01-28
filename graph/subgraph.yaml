@@ -27,6 +27,8 @@ dataSources:
       eventHandlers:
         - event: TableCreated(indexed address,indexed uint256)
           handler: handleMultiplePlayersTableCreated
+        - event: Requested(indexed address,indexed uint256,indexed address)
+          handler: handleRequested
       blockHandlers:
         - handler: handleSinglePlayerTableCreated
           filter:

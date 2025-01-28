@@ -1,14 +1,19 @@
+// biome-ignore lint/style/useImportType: <explanation>
 import { LiveRouletteABI, TableCreated as TableCreatedEvent } from "../generated/LiveRoulette/LiveRouletteABI";
+
+// biome-ignore lint/style/useImportType: not supported
+import { Requested as RequestedEvent } from "../generated/LiveRoulette/LiveRouletteABI";
 import { Table } from "../generated/schema";
 import { TableTemplate } from "../generated/templates";
-import { Address, BigInt, dataSource, ethereum } from "@graphprotocol/graph-ts";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: BigInt is a reserved word
+// biome-ignore lint/style/useImportType: <explanation>
+import { Address, BigInt, dataSource, ethereum, log } from "@graphprotocol/graph-ts";
+import { getOrCreateRound } from "./liro-table";
 
 
 export function handleMultiplePlayersTableCreated(event: TableCreatedEvent): void {
-  let entity = new Table(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  );
-  
+  const entity = new Table(event.params.table);
+
   entity.address = event.params.table;
   entity.interval = event.params.interval;
   entity.blockNumber = event.block.number;
@@ -24,9 +29,7 @@ export function handleMultiplePlayersTableCreated(event: TableCreatedEvent): voi
 
 export function handleSinglePlayerTableCreated(block: ethereum.Block): void {
   const singlePlayerAddress = LiveRouletteABI.bind(dataSource.address()).singlePlayerTable();
-  let entity = new Table(
-    block.hash.concatI32(block.number.toI32())
-  );
+  const entity = new Table(singlePlayerAddress);
   entity.interval = BigInt.zero();
   entity.address = singlePlayerAddress;
   entity.blockNumber = block.number;
@@ -37,4 +40,13 @@ export function handleSinglePlayerTableCreated(block: ethereum.Block): void {
   const context = dataSource.context();
   context.setBytes("singleRouletteTableAddress", singlePlayerAddress);
   TableTemplate.createWithContext(Address.fromBytes(entity.address), context);
+}
+
+export function handleRequested(event: RequestedEvent): void {
+  if(event.params.round !== BigInt.fromI32(0)) {
+    const roundEntity = getOrCreateRound(event.params.table, event.params.round);
+    roundEntity.status = BigInt.fromI32(2);
+    roundEntity.save();
+  }
+  log.info("Requested event received for round {}", [event.params.round.toString()]);
 }

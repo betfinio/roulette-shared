@@ -1,9 +1,9 @@
 import {
   Web3Function,
-  Web3FunctionContext,
+  type Web3FunctionContext,
 } from "@gelatonetwork/web3-functions-sdk";
 import {
-  Address,
+  type Address,
   createPublicClient,
   encodeFunctionData,
   http,
@@ -18,17 +18,15 @@ const abi = parseAbi([
 ]);
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-  const { multiChainProvider, userArgs, gelatoArgs, secrets } = context;
-  const provider = multiChainProvider.default();
-  const url = provider.connection.url;
+  const { userArgs, gelatoArgs, secrets } = context;
+  const delay = Number(await secrets.get("DELAY"));
+  const url = await secrets.get("RPC_URL");
   // initialize client
   const client = createPublicClient({
     chain: gelatoArgs.chainId === 80002 ? polygonAmoy : polygon,
     transport: http(url),
   });
-  const delay = Number(await secrets.get("DELAY"));
-  // eslint-disable-next-line no-async-promise-executor
-  await new Promise(async (resolve) => setTimeout(resolve, delay));
+  await new Promise((resolve) => setTimeout(resolve, delay));
 
   // get stones address
   const rouletteAddress = userArgs.roulette as Address;
@@ -51,6 +49,19 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   });
   // check if there are players
   if (Number(roundBank) > 0) {
+    try {
+      await client.simulateContract({
+        abi: abi,
+        address: rouletteAddress,
+        functionName: "spin",
+        args: [tableAddress, round],
+      });
+    } catch (e) {
+      return {
+        canExec: false,
+        message: `Round ${round} failed simulation run: ${JSON.stringify(e)}`,
+      };
+    }
     return {
       canExec: true,
       callData: [
