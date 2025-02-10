@@ -5,7 +5,7 @@ import { Address, BigInt, Bytes, log } from "@graphprotocol/graph-ts";
 import { LiroBetABI, LiroBetABI__getBetsResult } from "../generated/LiveRoulette/LiroBetABI";
 // biome-ignore lint/style/useImportType: not supported
 import { BetEnded as BetEndedEvent, BetPlaced as BetPlacedEvent } from "../generated/LiveRoulette/TableABI";
-import { Bet, BetEnded, Chip, PlayerRoundBetPlaceds, PlayerRoundSingleBetPlaceds, Round, RoundBetPlaceds, Table} from "../generated/schema";
+import { Bet, BetEnded, Chip, PlayerRoundBetPlaceds, PlayerRoundSingleBetPlaceds, Round, RoundBetPlaceds, Table } from "../generated/schema";
 import { handleRouletteNumberRolled, handleRouletteStats } from "./liro-stat";
 
 export function handleBetEnded(event: BetEndedEvent): void {

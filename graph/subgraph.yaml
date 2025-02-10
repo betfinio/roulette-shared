@@ -29,6 +29,11 @@ dataSources:
           handler: handleMultiplePlayersTableCreated
         - event: Requested(indexed address,indexed uint256,indexed address)
           handler: handleRequested
+      callHandlers:
+        - function: refundSingleBet(address)
+          handler: handleRefundSingle
+        - function: refund(address,uint256)
+          handler: handleRefundMulti
       blockHandlers:
         - handler: handleSinglePlayerTableCreated
           filter:
@@ -49,6 +54,10 @@ templates:
         - BetPlaced
       abis:
         - name: TableABI
+          file: ./abis/MultiPlayerTableABI.json
+        - name: SinglePlayerTableABI
+          file: ./abis/SinglePlayerTableABI.json
+        - name: MultiPlayerTableABI
           file: ./abis/MultiPlayerTableABI.json
         - name: LiroBetABI
           file: ./abis/LiroBetABI.json
