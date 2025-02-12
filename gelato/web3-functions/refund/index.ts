@@ -44,7 +44,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
   const response = await request<{ rounds: { round: bigint, table: Address, started: bigint }[], bets: { id: Address }[] }>(url, query.replace("$yesterday", Math.floor(new Date(Date.now() - 24 * 60 * 60 * 1000).getTime() / 1000).toString()));
 
   const data: Web3FunctionResultCallData[] = []
+  let tries = 0;
   while (true) {
+    if (tries > response.bets.length) {
+      break;
+    }
     // get one random bet from bets
     const randomBet = response.bets[Math.floor(Math.random() * response.bets.length)];
     try {
@@ -66,12 +70,14 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       break;
     } catch (e) {
       console.log(`Bet ${randomBet.id} is not refundable`);
+      tries++;
     }
   }
   // push one round from rounds
   const randomRound = response.rounds[0];
+  console.log(randomRound)
   data.push({
-    to: randomRound.table,
+    to: roulette,
     data: encodeFunctionData({
       abi: abi,
       functionName: "refund",
