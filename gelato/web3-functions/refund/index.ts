@@ -51,6 +51,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     }
     // get one random bet from bets
     const randomBet = response.bets[Math.floor(Math.random() * response.bets.length)];
+    if (randomBet === undefined) break;
     try {
       // check if bet is refundable(by calling simulateContract)
       await client.simulateContract({
@@ -73,17 +74,17 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       tries++;
     }
   }
-  // push one round from rounds
-  const randomRound = response.rounds[0];
-  console.log(randomRound)
-  data.push({
-    to: roulette,
-    data: encodeFunctionData({
-      abi: abi,
-      functionName: "refund",
-      args: [randomRound.table, randomRound.round],
+  // push each round from rounds
+  for (const round of response.rounds) {
+    data.push({
+      to: roulette,
+      data: encodeFunctionData({
+        abi: abi,
+        functionName: "refund",
+        args: [round.table, round.round],
+      })
     })
-  })
+  }
 
 
   return {

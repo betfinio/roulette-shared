@@ -7,7 +7,7 @@ import {
   Web3Function,
   type Web3FunctionContext,
 } from "@gelatonetwork/web3-functions-sdk";
-import { BigNumber, Contract, utils } from "ethers";
+import { BigNumber, Contract, ethers, utils } from "ethers";
 import { getNextRandomness, getRoundTime } from "../drand/util";
 import GelatoVRFConsumerBaseAbi from "./abis/GelatoVRFConsumerBase.json";
 import Multicall3Abi from "./abis/Multicall3.json";
@@ -15,7 +15,7 @@ import { type Address, createPublicClient, http } from "viem";
 import { polygon } from "viem/chains";
 
 // Constants to control request processing limits
-const MAX_FILTER_RANGE = 500; // Maximum block range when querying logs
+const MAX_FILTER_RANGE = 5000; // Maximum block range when querying logs
 const MAX_FILTER_REQUESTS = 5; // Maximum number of log queries per execution
 const MAX_MULTICALL_REQUESTS = 100; // Maximum number of requests to check in one multicall
 const REQUEST_AGE = 60; // Time in seconds before a request is eligible for fallback
@@ -86,7 +86,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
   // 4. Process Requests
   // Load existing requests from storage
-  let requests: { h: string; t: number; i: number; r: string, tx: string, round: string }[] = JSON.parse(
+  let requests: { h: string; t: number; i: number; r: string, tx: string, round: string, requestedHash: string }[] = JSON.parse(
     (await storage.get("requests")) ?? "[]"
   );
 
@@ -104,6 +104,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const requestId: BigNumber = decoded[0];
     const timestamp = Math.floor(getRoundTime(round.toNumber()) / 1000);
 
+    const dataWithRound = utils.keccak256(utils.defaultAbiCoder.encode(["uint256", "bytes"], [round, consumerData]));
+
     requests.push({
       h: log.blockHash,
       tx: log.transactionHash,
@@ -111,6 +113,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       i: log.logIndex,
       r: requestId.toString(),
       round: round.toString(),
+      requestedHash: dataWithRound
     });
   }
 
@@ -123,6 +126,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     };
   });
 
+
   const { returnData } = (await multicall.callStatic.aggregate(
     multicallData
   )) as { blockNumber: BigNumber; returnData: string[] };
@@ -132,8 +136,23 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     return isRequestPending;
   });
 
-  // Update storage
-  console.log("updating storage", requests, lastBlock);
+  // filter out invalid hash requests
+  const zeroHashRequests = requests.slice(0, MAX_MULTICALL_REQUESTS)
+  const zeroHashRequestsData = zeroHashRequests.map(({ r }) => {
+    return {
+      target: consumer.address,
+      callData: consumer.interface.encodeFunctionData("requestedHash", [r]),
+    };
+  });
+
+  const { returnData: zeroHashReturnData } = (await multicall.callStatic.aggregate(
+    zeroHashRequestsData
+  )) as { blockNumber: BigNumber; returnData: string[] };
+  requests = requests.filter((_, index) => {
+    if (index >= MAX_MULTICALL_REQUESTS) return true;
+    const isValidHash = zeroHashReturnData[index] === requests[index].requestedHash;
+    return isValidHash;
+  });
 
   await storage.set("requests", JSON.stringify(requests));
   await storage.set("lastBlock", lastBlock.toString());
@@ -209,7 +228,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
       account: '0x159aaab49593bc5d6299bf535fbb009196efd729'
     });
   } catch (error) {
-    console.log("error", error);
     return {
       canExec: false,
       message: `Failed to simulate fulfillRandomness: ${JSON.stringify(error)}`,
