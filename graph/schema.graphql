@@ -7,7 +7,7 @@ type Table @entity(immutable: true) {
     transactionHash: Bytes!
 }
 
-type PlayerRoundBetPlaceds @entity {
+type PlayerRoundBetPlaceds @entity(immutable: false) {
     id: Bytes!
     player: Bytes! # address
     round: BigInt! # uint256
@@ -22,7 +22,7 @@ type PlayerRoundBetPlaceds @entity {
     blockTimestamp: BigInt!
     status: BigInt
 }
-type PlayerRoundSingleBetPlaceds @entity {
+type PlayerRoundSingleBetPlaceds @entity(immutable: false) {
     id: Bytes!
     player: Bytes! # address
     round: BigInt! # uint256
@@ -35,7 +35,7 @@ type PlayerRoundSingleBetPlaceds @entity {
     status: BigInt
     chips: [Chip!]!
 }
-type RoundBetPlaceds @entity {
+type RoundBetPlaceds @entity(immutable: false) {
     id: Bytes!
     # We need player  for single mode only
     player: Bytes! # address
@@ -60,14 +60,14 @@ type BetEnded @entity(immutable: true) {
 }
 
 
-type Chip @entity {
+type Chip @entity(immutable: false) {
     id: Bytes!
     amount: BigInt!
     bitMap: BigInt!
     player: Bytes! # address
 }
 
-type RouletteNumber @entity {
+type RouletteNumber @entity(immutable: false) {
     id: Bytes!
     number: Int! # The roulette number (0-36)
     lastUpdated: BigInt! # Last block timestamp when the number was rolled
@@ -78,7 +78,7 @@ type RouletteNumber @entity {
 
 }
 
-type RouletteStats @entity {
+type RouletteStats @entity(immutable: false) {
     id: Bytes!
     totalRolls: BigInt! # Total number of rolls
     oddCount: BigInt! # Total odd numbers rolled
@@ -91,13 +91,13 @@ type RouletteStats @entity {
 }
 
 
-type UniqueTableRounds @entity {
+type UniqueTableRounds @entity(immutable: false) {
     id: Bytes!
     table: Bytes! # address
     round: BigInt! # uint256
 }
 
-type Bet @entity {
+type Bet @entity(immutable: false) {
     id: Bytes!
     amount: BigInt! # uint256
     winAmount: BigInt! # uint256
@@ -110,7 +110,7 @@ type Bet @entity {
 }
 
 # for live roulette only
-type Round @entity {
+type Round @entity(immutable: false) {
     id: Bytes!
     table: Bytes! # address
     round: BigInt! # uint256
