@@ -1,6 +1,6 @@
 {
 	"name": "roulette-shared",
-	"license": "UNLICENSED",
+	"license": "MIT",
 	"scripts": {
 		"codegen": "bun run prepare:dev && graph codegen",
 		"dev": "bun run codegen && bun run build:dev && bun run deploy:dev",
@@ -16,7 +16,7 @@
 	},
 	"dependencies": {
 		"@graphprotocol/graph-cli": "^0.97.1",
-		"@graphprotocol/graph-ts": "^0.38.0"
+		"@graphprotocol/graph-ts": "^0.38.1"
 	},
 	"devDependencies": {
 		"matchstick-as": "^0.6.0",

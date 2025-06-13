@@ -5,7 +5,7 @@
       "name": "roulette-shared",
       "dependencies": {
         "@graphprotocol/graph-cli": "^0.97.1",
-        "@graphprotocol/graph-ts": "^0.38.0",
+        "@graphprotocol/graph-ts": "^0.38.1",
       },
       "devDependencies": {
         "matchstick-as": "^0.6.0",
@@ -28,7 +28,7 @@
 
     "@graphprotocol/graph-cli": ["@graphprotocol/graph-cli@0.97.1", "", { "dependencies": { "@float-capital/float-subgraph-uncrashable": "0.0.0-internal-testing.5", "@oclif/core": "4.3.0", "@oclif/plugin-autocomplete": "^3.2.11", "@oclif/plugin-not-found": "^3.2.29", "@oclif/plugin-warn-if-update-available": "^3.1.24", "@pinax/graph-networks-registry": "^0.6.5", "@whatwg-node/fetch": "^0.10.1", "assemblyscript": "0.19.23", "chokidar": "4.0.3", "debug": "4.4.1", "docker-compose": "1.2.0", "fs-extra": "11.3.0", "glob": "11.0.2", "gluegun": "5.2.0", "graphql": "16.11.0", "immutable": "5.1.2", "jayson": "4.2.0", "js-yaml": "4.1.0", "kubo-rpc-client": "^5.0.2", "open": "10.1.2", "prettier": "3.5.3", "semver": "7.7.2", "tmp-promise": "3.0.3", "undici": "7.9.0", "web3-eth-abi": "4.4.1", "yaml": "2.8.0" }, "bin": { "graph": "bin/run.js" } }, "sha512-j5dc2Tl694jMZmVQu8SSl5Yt3VURiBPgglQEpx30aW6UJ89eLR/x46Nn7S6eflV69fmB5IHAuAACnuTzo8MD0Q=="],
 
-    "@graphprotocol/graph-ts": ["@graphprotocol/graph-ts@0.38.0", "", { "dependencies": { "assemblyscript": "0.27.31" } }, "sha512-fx9IpqbXHWMskl6wLDstKLy0VeszTQg6K5xsUEHXPkpOtceDkWAiDE8FyqsGF0IVTmE2Pxafw4t6+rEG8lVfyw=="],
+    "@graphprotocol/graph-ts": ["@graphprotocol/graph-ts@0.38.1", "", { "dependencies": { "assemblyscript": "0.27.31" } }, "sha512-CEE2mJugPuukPugMY4bJRW8t8lOqdNa6Y3Oc0x8xc0EwidjF1LRBcfbuC5Ep5gfvWILNC/IQTT1p+QYW8cz4Hw=="],
 
     "@inquirer/checkbox": ["@inquirer/checkbox@4.1.5", "", { "dependencies": { "@inquirer/core": "^10.1.10", "@inquirer/figures": "^1.0.11", "@inquirer/type": "^3.0.6", "ansi-escapes": "^4.3.2", "yoctocolors-cjs": "^2.1.2" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-swPczVU+at65xa5uPfNP9u3qx/alNwiaykiI/ExpsmMSQW55trmZcwhYWzw/7fj+n6Q8z1eENvR7vFfq9oPSAQ=="],
 
