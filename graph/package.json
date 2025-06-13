@@ -2,20 +2,24 @@
 	"name": "roulette-shared",
 	"license": "UNLICENSED",
 	"scripts": {
-		"codegen": "graph codegen",
+		"codegen": "bun run prepare:dev && graph codegen",
 		"dev": "bun run codegen && bun run build:dev && bun run deploy:dev",
 		"prod": "bun run codegen && bun run build:prod && bun run deploy:prod",
-		"build:dev": "graph build --network polygon-amoy",
-		"build:prod": "graph build --network matic",
-		"deploy:dev": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-dev --network polygon-amoy",
-		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-prod --network matic",
+		"prepare:dev": "bunx mustache config/polygon-amoy.json template.subgraph.yaml > subgraph.yaml",
+		"prepare:prod": "bunx mustache config/matic.json template.subgraph.yaml > subgraph.yaml",
+		"build:dev": "bun run prepare:dev && graph build ",
+		"build:prod": "bun run prepare:prod && graph build",
+		"build:silent": "graph build",
+		"deploy:dev": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-dev",
+		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-prod",
 		"test": "graph test"
 	},
 	"dependencies": {
-		"@graphprotocol/graph-cli": "^0.97.0",
+		"@graphprotocol/graph-cli": "^0.97.1",
 		"@graphprotocol/graph-ts": "^0.38.0"
 	},
 	"devDependencies": {
-		"matchstick-as": "0.5.0"
+		"matchstick-as": "^0.6.0",
+		"mustache": "^4.2.0"
 	}
 }
