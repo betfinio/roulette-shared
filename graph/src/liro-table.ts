@@ -8,223 +8,381 @@ import { BetEnded as BetEndedEvent, BetPlaced as BetPlacedEvent } from "../gener
 import { Bet, BetEnded, Chip, PlayerRoundBetPlaceds, PlayerRoundSingleBetPlaceds, Round, RoundBetPlaceds, Table } from "../generated/schema";
 import { handleRouletteNumberRolled, handleRouletteStats } from "./liro-stat";
 
+// Constants
+const PENDING_WIN_AMOUNT = BigInt.fromI32(-1);
+const DEFAULT_WIN_NUMBER = BigInt.fromI32(42);
+const ROUND_STATUS_PENDING = BigInt.fromI32(1);
+const ROUND_STATUS_COMPLETED = BigInt.fromI32(3);
+
+/**
+ * Handles the BetEnded event by updating all relevant entities with win amounts and status
+ */
 export function handleBetEnded(event: BetEndedEvent): void {
+  // Create and save BetEnded entity
+  const betEndedEntity = new BetEnded(event.params.bet);
+  betEndedEntity.transactionHash = event.transaction.hash;
+  betEndedEntity.bet = event.params.bet;
+  betEndedEntity.save();
 
-  const entity = new BetEnded(event.params.bet);
-  entity.transactionHash = event.transaction.hash;
-  entity.transactionHash = event.transaction.hash;
-  entity.bet = event.params.bet;
-  entity.save();
+  // Get bet details from contract
+  const betContract = LiroBetABI.bind(event.params.bet);
+  const playerAddress = betContract.getPlayer();
+  const betStatus = betContract.getStatus();
+  const tableAddress = betContract.getTable();
+  const roundNumber = event.params.round.toI32();
 
-  const bet = LiroBetABI.bind(event.params.bet);
-  const round = event.params.round.toI32();
-  const playerRoundSingleBetPlacedsId = event.address.concatI32(round).concat(bet.getPlayer()).concat(event.params.bet);
-  const playerRoundSingleBetPlaced = PlayerRoundSingleBetPlaceds.load(playerRoundSingleBetPlacedsId);
-  if (playerRoundSingleBetPlaced !== null) {
-    playerRoundSingleBetPlaced.status = bet.getStatus();
-    playerRoundSingleBetPlaced.winAmount = event.params.winAmount;
-    playerRoundSingleBetPlaced.save();
+  // Update single bet placement
+  updateSingleBetPlacement(event, roundNumber, playerAddress, betStatus);
+
+  // Update player's round bet placements
+  updatePlayerRoundBetPlacements(event, tableAddress, roundNumber, playerAddress, betStatus);
+
+  // Update round bet placements
+  updateRoundBetPlacements(event, tableAddress, roundNumber, betStatus);
+
+  // Handle roulette statistics
+  handleRouletteNumberRolled(event);
+  handleRouletteStats(event);
+
+  // Update bet entity
+  updateBetEntity(event, betStatus);
+
+  // Update round entity if not single player
+  if (event.params.round !== BigInt.fromI32(0)) {
+    updateRoundEntity(event, tableAddress);
+  }
+}
+
+/**
+ * Updates the single bet placement entity with win amount and status
+ */
+function updateSingleBetPlacement(
+  event: BetEndedEvent,
+  roundNumber: i32,
+  playerAddress: Address,
+  betStatus: BigInt
+): void {
+  const singleBetId = event.address.concatI32(roundNumber).concat(playerAddress).concat(event.params.bet);
+  const singleBet = PlayerRoundSingleBetPlaceds.load(singleBetId);
+
+  if (singleBet !== null) {
+    singleBet.status = betStatus;
+    singleBet.winAmount = event.params.winAmount;
+    singleBet.save();
+  }
+}
+
+/**
+ * Updates the player's round bet placements with aggregated win amounts and status
+ */
+function updatePlayerRoundBetPlacements(
+  event: BetEndedEvent,
+  tableAddress: Address,
+  roundNumber: i32,
+  playerAddress: Address,
+  betStatus: BigInt
+): void {
+  let playerRoundId = tableAddress.concatI32(roundNumber).concat(playerAddress);
+  if (roundNumber === 0) {
+    playerRoundId = playerRoundId.concat(event.params.bet);
   }
 
+  const playerRound = PlayerRoundBetPlaceds.load(playerRoundId);
+  if (playerRound !== null) {
+    playerRound.status = betStatus;
+    playerRound.winNumber = event.params.value;
 
-  let playerRoundPlacedsId = bet.getTable().concatI32(round).concat(bet.getPlayer());
-  if (round === 0) {
-    playerRoundPlacedsId = playerRoundPlacedsId.concat(event.params.bet);
-  }
-  const playerRoundPlaced = PlayerRoundBetPlaceds.load(playerRoundPlacedsId);
-  if (playerRoundPlaced !== null) {
-    playerRoundPlaced.status = bet.getStatus();
-
-    if (playerRoundPlaced.winAmount !== BigInt.fromI32(-1)) {
-      playerRoundPlaced.winAmount = playerRoundPlaced.winAmount.plus(event.params.winAmount);
+    if (playerRound.winAmount !== PENDING_WIN_AMOUNT) {
+      playerRound.winAmount = playerRound.winAmount.plus(event.params.winAmount);
     } else {
-      playerRoundPlaced.winAmount = event.params.winAmount;
+      playerRound.winAmount = event.params.winAmount;
     }
 
-    playerRoundPlaced.winNumber = event.params.value;
-    playerRoundPlaced.save();
+    playerRound.save();
   }
-  let roundPlacedsId = bet.getTable().concatI32(round);
-  if (round === 0) {
-    roundPlacedsId = roundPlacedsId.concat(event.params.bet);
+}
+
+/**
+ * Updates the round bet placements with aggregated win amounts and status
+ */
+function updateRoundBetPlacements(
+  event: BetEndedEvent,
+  tableAddress: Address,
+  roundNumber: i32,
+  betStatus: BigInt
+): void {
+  let roundId = tableAddress.concatI32(roundNumber);
+  if (roundNumber === 0) {
+    roundId = roundId.concat(event.params.bet);
   }
-  const roundPlaced = RoundBetPlaceds.load(roundPlacedsId);
-  if (roundPlaced !== null) {
-    roundPlaced.status = bet.getStatus();
 
-    roundPlaced.winNumber = event.params.value;
+  const round = RoundBetPlaceds.load(roundId);
+  if (round !== null) {
+    round.status = betStatus;
+    round.winNumber = event.params.value;
 
-    if (roundPlaced.winAmount !== BigInt.fromI32(-1)) {
-      roundPlaced.winAmount = roundPlaced.winAmount.plus(event.params.winAmount);
+    if (round.winAmount !== PENDING_WIN_AMOUNT) {
+      round.winAmount = round.winAmount.plus(event.params.winAmount);
     } else {
-      roundPlaced.winAmount = event.params.winAmount;
+      round.winAmount = event.params.winAmount;
     }
-    roundPlaced.save();
+
+    round.save();
   }
+}
 
-  handleRouletteNumberRolled(event as BetEndedEvent);
-  handleRouletteStats(event as BetEndedEvent);
-
-  // new code
-  // update bet entity
-  const betEntity = Bet.load(event.params.bet);
-  if (betEntity !== null) {
-    betEntity.winAmount = event.params.winAmount;
-    betEntity.winNumber = event.params.value;
-    betEntity.status = bet.getStatus();
-    betEntity.save();
+/**
+ * Updates the bet entity with win amount and status
+ */
+function updateBetEntity(event: BetEndedEvent, betStatus: BigInt): void {
+  const bet = Bet.load(event.params.bet);
+  if (bet !== null) {
+    bet.winAmount = event.params.winAmount;
+    bet.winNumber = event.params.value;
+    bet.status = betStatus;
+    bet.save();
   } else {
     throw new Error(`Bet ${event.params.bet} not found`);
   }
-  // check if table is not single player
-  if (event.params.round !== BigInt.fromI32(0)) {
-    const roundEntity = getOrCreateRound(event.address, event.params.round);
-    roundEntity.totalWinAmount = roundEntity.totalWinAmount.plus(event.params.winAmount);
-    roundEntity.winNumber = event.params.value;
-    roundEntity.status = BigInt.fromI32(3);
-    roundEntity.save();
-  }
 }
 
+/**
+ * Updates the round entity with total win amount and status
+ */
+function updateRoundEntity(event: BetEndedEvent, tableAddress: Address): void {
+  const round = getOrCreateRound(tableAddress, event.params.round);
+  round.totalWinAmount = round.totalWinAmount.plus(event.params.winAmount);
+  round.winNumber = event.params.value;
+  round.status = ROUND_STATUS_COMPLETED;
+  round.save();
+}
+
+/**
+ * Handles the BetPlaced event by creating and updating all relevant entities
+ */
 export function handleBetPlaced(event: BetPlacedEvent): void {
+  const betContract = LiroBetABI.bind(event.params.bet);
+  const roundNumber = event.params.round.toI32();
+  const playerAddress = betContract.getPlayer();
+  const betAmount = betContract.getAmount();
+  const tableAddress = betContract.getTable();
+  const betStatus = betContract.getStatus();
+  const betDetails = betContract.getBets();
 
-  const bet = LiroBetABI.bind(event.params.bet);
+  // Create single bet placement
+  createSingleBetPlacement(event, roundNumber, playerAddress, betAmount, tableAddress, betStatus, betDetails);
 
-  const round = event.params.round.toI32();
+  // Create or update player's round bet placements
+  createOrUpdatePlayerRoundBetPlacements(event, roundNumber, playerAddress, betAmount, tableAddress, betStatus);
 
-  const playerRoundSingleBetPlacedsId = event.address.concatI32(round).concat(bet.getPlayer()).concat(event.params.bet);
-  const playerRoundSingleBetPlaced = new PlayerRoundSingleBetPlaceds(playerRoundSingleBetPlacedsId);
-  const player = bet.getPlayer();
-  playerRoundSingleBetPlaced.player = player;
-  playerRoundSingleBetPlaced.bet = event.params.bet;
-  playerRoundSingleBetPlaced.blockTimestamp = event.block.timestamp;
-  playerRoundSingleBetPlaced.blockNumber = event.block.number;
-  playerRoundSingleBetPlaced.round = event.params.round;
-  playerRoundSingleBetPlaced.amount = bet.getAmount();
-  playerRoundSingleBetPlaced.winAmount = BigInt.fromI32(-1);
-  playerRoundSingleBetPlaced.table = bet.getTable();
-  playerRoundSingleBetPlaced.status = bet.getStatus();
-  playerRoundSingleBetPlaced.chips = createChips(bet.getBets(), event.params.bet, player);
+  // Create or update round bet placements
+  createOrUpdateRoundBetPlacements(event, roundNumber, playerAddress, betAmount, tableAddress, betStatus, betDetails);
 
-  playerRoundSingleBetPlaced.save();
+  // Create bet entity
+  createBetEntity(event, betAmount, betStatus, playerAddress, betDetails, tableAddress);
 
-
-  let playerRoundPlacedsId = event.address.concatI32(round).concat(bet.getPlayer());
-  if (round === 0) {
-    playerRoundPlacedsId = playerRoundPlacedsId.concat(event.params.bet);
-  }
-
-  let playerRoundPlaced = PlayerRoundBetPlaceds.load(playerRoundPlacedsId);
-  if (playerRoundPlaced === null) {
-    playerRoundPlaced = new PlayerRoundBetPlaceds(playerRoundPlacedsId);
-    playerRoundPlaced.player = bet.getPlayer();
-    playerRoundPlaced.bet = event.params.bet;
-    playerRoundPlaced.betsCount = BigInt.fromI32(1);
-    playerRoundPlaced.round = event.params.round;
-    playerRoundPlaced.player = bet.getPlayer();
-    playerRoundPlaced.amount = bet.getAmount();
-    playerRoundPlaced.winAmount = BigInt.fromI32(-1);
-    playerRoundPlaced.table = bet.getTable();
-    playerRoundPlaced.blockNumber = event.block.number;
-    playerRoundPlaced.blockTimestamp = event.block.timestamp;
-    playerRoundPlaced.status = bet.getStatus();
-    playerRoundPlaced.save();
-  } else {
-    playerRoundPlaced.amount = playerRoundPlaced.amount.plus(bet.getAmount());
-    playerRoundPlaced.betsCount = playerRoundPlaced.betsCount.plus(BigInt.fromI32(1));
-    playerRoundPlaced.save();
-  }
-  let roundPlacedsId = event.address.concatI32(round);
-  if (round === 0) {
-    roundPlacedsId = roundPlacedsId.concat(event.params.bet);
-  }
-  let roundPlaced = RoundBetPlaceds.load(roundPlacedsId);
-  if (roundPlaced === null) {
-    roundPlaced = new RoundBetPlaceds(roundPlacedsId);
-    roundPlaced.bet = event.params.bet;
-    roundPlaced.betsCount = BigInt.fromI32(1);
-    roundPlaced.player = player;
-    roundPlaced.round = event.params.round;
-    roundPlaced.amount = bet.getAmount();
-    roundPlaced.winAmount = BigInt.fromI32(-1);
-    roundPlaced.table = bet.getTable();
-    roundPlaced.blockNumber = event.block.number;
-    roundPlaced.blockTimestamp = event.block.timestamp;
-    roundPlaced.status = bet.getStatus();
-    roundPlaced.chips = createChips(bet.getBets(), event.params.bet, player);
-    roundPlaced.save();
-  } else {
-    roundPlaced.amount = roundPlaced.amount.plus(bet.getAmount());
-    roundPlaced.betsCount = roundPlaced.betsCount.plus(BigInt.fromI32(1));
-    roundPlaced.chips = roundPlaced.chips.concat(createChips(bet.getBets(), event.params.bet, player));
-
-    roundPlaced.save();
-  }
-
-  // new code
-
-  // create bet entity
-  const betEntity = new Bet(event.params.bet);
-  betEntity.amount = bet.getAmount();
-  betEntity.winAmount = BigInt.fromI32(0);
-  betEntity.winNumber = BigInt.fromI32(42);
-  betEntity.status = bet.getStatus();
-  betEntity.player = player;
-  betEntity.chips = createChips(bet.getBets(), event.params.bet, player);
-  betEntity.table = event.address;
-  betEntity.round = event.params.round;
-  betEntity.save();
-  // check if table is not single player
+  // Create or update round entity if not single player
   if (event.params.round !== BigInt.fromI32(0)) {
-    // create round entity
-    const roundEntity = getOrCreateRound(event.address, event.params.round);
-    roundEntity.totalBetAmount = roundEntity.totalBetAmount.plus(bet.getAmount());
-    roundEntity.bets.push(betEntity.id);
-    roundEntity.save();
+    createOrUpdateRoundEntity(event, tableAddress, betAmount);
   }
 }
 
+/**
+ * Creates a new single bet placement entity
+ */
+function createSingleBetPlacement(
+  event: BetPlacedEvent,
+  roundNumber: i32,
+  playerAddress: Address,
+  betAmount: BigInt,
+  tableAddress: Address,
+  betStatus: BigInt,
+  betDetails: LiroBetABI__getBetsResult
+): void {
+  const singleBetId = event.address.concatI32(roundNumber).concat(playerAddress).concat(event.params.bet);
+  const singleBet = new PlayerRoundSingleBetPlaceds(singleBetId);
 
+  singleBet.player = playerAddress;
+  singleBet.bet = event.params.bet;
+  singleBet.blockTimestamp = event.block.timestamp;
+  singleBet.blockNumber = event.block.number;
+  singleBet.round = event.params.round;
+  singleBet.amount = betAmount;
+  singleBet.winAmount = PENDING_WIN_AMOUNT;
+  singleBet.table = tableAddress;
+  singleBet.status = betStatus;
+  singleBet.chips = createChips(betDetails, event.params.bet, playerAddress);
 
+  singleBet.save();
+}
+
+/**
+ * Creates or updates player's round bet placements
+ */
+function createOrUpdatePlayerRoundBetPlacements(
+  event: BetPlacedEvent,
+  roundNumber: i32,
+  playerAddress: Address,
+  betAmount: BigInt,
+  tableAddress: Address,
+  betStatus: BigInt
+): void {
+  let playerRoundId = event.address.concatI32(roundNumber).concat(playerAddress);
+  if (roundNumber === 0) {
+    playerRoundId = playerRoundId.concat(event.params.bet);
+  }
+
+  let playerRound = PlayerRoundBetPlaceds.load(playerRoundId);
+  if (playerRound === null) {
+    playerRound = new PlayerRoundBetPlaceds(playerRoundId);
+    playerRound.player = playerAddress;
+    playerRound.bet = event.params.bet;
+    playerRound.betsCount = BigInt.fromI32(1);
+    playerRound.round = event.params.round;
+    playerRound.amount = betAmount;
+    playerRound.winAmount = PENDING_WIN_AMOUNT;
+    playerRound.table = tableAddress;
+    playerRound.blockNumber = event.block.number;
+    playerRound.blockTimestamp = event.block.timestamp;
+    playerRound.status = betStatus;
+  } else {
+    playerRound.amount = playerRound.amount.plus(betAmount);
+    playerRound.betsCount = playerRound.betsCount.plus(BigInt.fromI32(1));
+  }
+
+  playerRound.save();
+}
+
+/**
+ * Creates or updates round bet placements
+ */
+function createOrUpdateRoundBetPlacements(
+  event: BetPlacedEvent,
+  roundNumber: i32,
+  playerAddress: Address,
+  betAmount: BigInt,
+  tableAddress: Address,
+  betStatus: BigInt,
+  betDetails: LiroBetABI__getBetsResult
+): void {
+  let roundId = event.address.concatI32(roundNumber);
+  if (roundNumber === 0) {
+    roundId = roundId.concat(event.params.bet);
+  }
+
+  let round = RoundBetPlaceds.load(roundId);
+  if (round === null) {
+    round = new RoundBetPlaceds(roundId);
+    round.bet = event.params.bet;
+    round.betsCount = BigInt.fromI32(1);
+    round.player = playerAddress;
+    round.round = event.params.round;
+    round.amount = betAmount;
+    round.winAmount = PENDING_WIN_AMOUNT;
+    round.table = tableAddress;
+    round.blockNumber = event.block.number;
+    round.blockTimestamp = event.block.timestamp;
+    round.status = betStatus;
+    round.chips = createChips(betDetails, event.params.bet, playerAddress);
+  } else {
+    round.amount = round.amount.plus(betAmount);
+    round.betsCount = round.betsCount.plus(BigInt.fromI32(1));
+    round.chips = round.chips.concat(createChips(betDetails, event.params.bet, playerAddress));
+  }
+
+  round.save();
+}
+
+/**
+ * Creates a new bet entity
+ */
+function createBetEntity(
+  event: BetPlacedEvent,
+  betAmount: BigInt,
+  betStatus: BigInt,
+  playerAddress: Address,
+  betDetails: LiroBetABI__getBetsResult,
+  tableAddress: Address
+): void {
+  const bet = new Bet(event.params.bet);
+  bet.amount = betAmount;
+  bet.winAmount = BigInt.fromI32(0);
+  bet.winNumber = DEFAULT_WIN_NUMBER;
+  bet.status = betStatus;
+  bet.player = playerAddress;
+  bet.chips = createChips(betDetails, event.params.bet, playerAddress);
+  bet.table = event.address;
+  bet.round = event.params.round;
+  bet.save();
+}
+
+/**
+ * Creates or updates round entity
+ */
+function createOrUpdateRoundEntity(
+  event: BetPlacedEvent,
+  tableAddress: Address,
+  betAmount: BigInt
+): void {
+  const round = getOrCreateRound(tableAddress, event.params.round);
+  round.totalBetAmount = round.totalBetAmount.plus(betAmount);
+  round.bets.push(event.params.bet);
+  round.save();
+}
+
+/**
+ * Creates chip entities for a bet and returns their IDs
+ */
 function createChips(bets: LiroBetABI__getBetsResult, betAddress: Address, player: Address): Array<Bytes> {
   const chipIds = new Array<Bytes>();
-  for (let i = 0; i < bets.getAmounts().length; i++) {
+  const amounts = bets.getAmounts();
+  const bitmaps = bets.getBitmaps();
+
+  for (let i = 0; i < amounts.length; i++) {
     const chipId = betAddress.concatI32(i);
     const chip = new Chip(chipId);
-    chip.amount = bets.getAmounts()[i];
-    chip.bitMap = bets.getBitmaps()[i];
+    chip.amount = amounts[i];
+    chip.bitMap = bitmaps[i];
     chip.player = player;
     chip.save();
     chipIds.push(chipId);
   }
+
   return chipIds;
 }
 
-
+/**
+ * Gets an existing round or creates a new one
+ */
 export function getOrCreateRound(tableAddress: Address, roundId: BigInt): Round {
-  const _round = tableAddress.concatI32(roundId.toI32());
-  let round = Round.load(_round);
+  const roundEntityId = tableAddress.concatI32(roundId.toI32());
+  let round = Round.load(roundEntityId);
+
   if (round === null) {
     const table = Table.load(tableAddress);
     if (table === null) {
       throw new Error(`Table ${tableAddress.toHexString()} not found`);
     }
-    round = new Round(_round);
+
+    round = new Round(roundEntityId);
     round.table = tableAddress;
     round.round = roundId;
-    round.winNumber = BigInt.fromI32(42);
-    round.status = BigInt.fromI32(1);
-    round.started = getStarted(table, roundId);
+    round.winNumber = DEFAULT_WIN_NUMBER;
+    round.status = ROUND_STATUS_PENDING;
+    round.started = calculateRoundStartTime(table, roundId);
     round.totalBetAmount = BigInt.fromI32(0);
     round.totalWinAmount = BigInt.fromI32(0);
     round.bets = [];
     round.save();
   }
+
   return round;
 }
 
-function getStarted(table: Table, roundId: BigInt): BigInt {
-  const started = table.interval.times(roundId);
-  return started;
+/**
+ * Calculates the start time for a round based on table interval
+ */
+function calculateRoundStartTime(table: Table, roundId: BigInt): BigInt {
+  return table.interval.times(roundId);
 }
 
