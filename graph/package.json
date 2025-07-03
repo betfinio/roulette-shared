@@ -9,7 +9,9 @@
 		"build:prod": "graph build --network matic",
 		"deploy:dev": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-dev --network polygon-amoy",
 		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-prod --network matic",
-		"test": "graph test"
+		"test": "graph test",
+		"create-local": "graph create roulette-dev --node http://127.0.0.1:8020",
+		"deploy-local": "graph deploy roulette-dev --ipfs http://localhost:5001 --node http://127.0.0.1:8020"
 	},
 	"dependencies": {
 		"@graphprotocol/graph-cli": "^0.97.0",
