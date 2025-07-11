@@ -2,12 +2,10 @@
 	"name": "roulette-shared",
 	"license": "MIT",
 	"scripts": {
-		"codegen": "bun run prepare:dev && graph codegen",
+		"codegen": "graph codegen",
 		"dev": "bun run codegen && bun run build:dev && bun run deploy:dev",
 		"prod": "bun run codegen && bun run build:prod && bun run deploy:prod",
 		"prepare:dev": "chmod +x scripts/prepare-subgraph.sh && ./scripts/prepare-subgraph.sh dev",
-		"create-local": "graph create roulette-dev --node http://127.0.0.1:8020",
-		"deploy-local": "graph deploy roulette-dev --ipfs http://localhost:5001 --node http://127.0.0.1:8020",
 		"prepare:prod": "chmod +x scripts/prepare-subgraph.sh && ./scripts/prepare-subgraph.sh prod",
 		"prepare:local": "chmod +x scripts/prepare-subgraph.sh && ./scripts/prepare-subgraph.sh local",
 		"build:dev": "bun run prepare:dev && graph build ",
