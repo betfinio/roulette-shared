@@ -19,8 +19,8 @@ dataSources:
     network: polygon-amoy
     source:
       abi: LiveRouletteABI
-      address: "0x507d96C47B20767B399a6A7fa568bFCf7A7B4f00"
-      startBlock: 23420048
+      address: "0xe5B2a6EE8285Eff2F3Fd431d3611E1473aD71c58"
+      startBlock: 23461923
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
