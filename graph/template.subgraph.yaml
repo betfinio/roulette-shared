@@ -69,7 +69,6 @@ templates:
             amount: LiroBetABI[event.params.bet].getAmount()
             table: LiroBetABI[event.params.bet].getTable()
             status:  LiroBetABI[event.params.bet].getStatus()
-            bets:  LiroBetABI[event.params.bet].getBets()
         - event: BetEnded(indexed address,indexed uint256,uint256,uint256)
           handler: handleBetEnded
           calls:
@@ -77,4 +76,3 @@ templates:
             amount: LiroBetABI[event.params.bet].getAmount()
             table: LiroBetABI[event.params.bet].getTable()
             status:  LiroBetABI[event.params.bet].getStatus()
-            bets:  LiroBetABI[event.params.bet].getBets()
