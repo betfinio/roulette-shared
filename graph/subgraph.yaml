@@ -16,11 +16,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: LiveRoulette
-    network: polygon-amoy
+    network: matic
     source:
       abi: LiveRouletteABI
-      address: "0xe5B2a6EE8285Eff2F3Fd431d3611E1473aD71c58"
-      startBlock: 23461923
+      address: "0xbFCA87dE5fFeD96C1738922b4Df4E8f26B888001"
+      startBlock: 68284558
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -52,7 +52,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: TableTemplate
-    network: polygon-amoy
+    network: matic
     source:
       abi: TableABI
     mapping:
