@@ -12,7 +12,7 @@
 		"build:prod": "bun run prepare:prod && graph build",
 		"build:silent": "graph build",
 		"deploy:dev": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-dev",
-		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-prod",
+		"deploy:prod": "graph deploy --node https://api.studio.thegraph.com/deploy/ roulette-live-prod",
 		"test": "graph test",
 		"test:coverage": "graph test --coverage"
 	},

@@ -20,7 +20,7 @@ dataSources:
     source:
       abi: LiveRouletteABI
       address: "0xbFCA87dE5fFeD96C1738922b4Df4E8f26B888001"
-      startBlock: 68284558
+      startBlock: 68284559
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
