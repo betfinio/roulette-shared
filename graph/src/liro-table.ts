@@ -162,12 +162,13 @@ function updateRoundEntity(event: BetEndedEvent, tableAddress: Address): void {
  */
 export function handleBetPlaced(event: BetPlacedEvent): void {
   const betContract = LiroBetABI.bind(event.params.bet);
-  const roundNumber = event.params.round.toI32();
-  const playerAddress = betContract.getPlayer();
-  const betAmount = betContract.getAmount();
-  const tableAddress = betContract.getTable();
-  const betStatus = betContract.getStatus();
-  const betDetails = betContract.getBets();
+  
+  const roundNumber = event.params.round.toI32(); // event.params.round
+  const playerAddress = betContract.getPlayer(); // NewBet event from TP(topic2), NEW BET Signature: 0xdc5bd605828c52e0f2371245383c1d4d49c0f35f93c95370583ad576276a00c1
+  const betAmount = betContract.getAmount(); //  Transfer event from TP, PLAYER -> ROULEETTE ADDRESS( warning first transfer)
+  const tableAddress = betContract.getTable();// event.address
+  const betStatus = betContract.getStatus(); // 1
+  const betDetails = betContract.getBets(); // 
 
   // Create single bet placement
   createSingleBetPlacement(event, roundNumber, playerAddress, betAmount, tableAddress, betStatus, betDetails);
