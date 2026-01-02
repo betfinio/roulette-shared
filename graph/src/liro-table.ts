@@ -142,7 +142,7 @@ function updateBetEntity(event: BetEndedEvent, betStatus: BigInt): void {
     bet.status = betStatus;
     bet.save();
   } else {
-    throw new Error(`Bet ${event.params.bet} not found`);
+    // do nothing
   }
 }
 

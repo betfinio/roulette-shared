@@ -8,15 +8,15 @@
 #   bun run prepare:env
 # ============================================================================
 
-specVersion: 1.2.0
+specVersion: 1.3.0
 indexerHints:
-  prune: auto
+  prune: never
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
     name: LiveRoulette
-    network: polygon
+    network: matic
     source:
       abi: LiveRouletteABI
       address: "0xbFCA87dE5fFeD96C1738922b4Df4E8f26B888001"
@@ -52,7 +52,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: TableTemplate
-    network: polygon
+    network: matic
     source:
       abi: TableABI
     mapping:
@@ -78,7 +78,7 @@ templates:
             player: LiroBetABI[event.params.bet].getPlayer()
             amount: LiroBetABI[event.params.bet].getAmount()
             table: LiroBetABI[event.params.bet].getTable()
-            status:  LiroBetABI[event.params.bet].getStatus()
+            status: LiroBetABI[event.params.bet].getStatus()
             bets: LiroBetABI[event.params.bet].getBets()
         - event: BetEnded(indexed address,indexed uint256,uint256,uint256)
           handler: handleBetEnded
@@ -86,4 +86,4 @@ templates:
             player: LiroBetABI[event.params.bet].getPlayer()
             amount: LiroBetABI[event.params.bet].getAmount()
             table: LiroBetABI[event.params.bet].getTable()
-            status:  LiroBetABI[event.params.bet].getStatus()
+            status: LiroBetABI[event.params.bet].getStatus()
